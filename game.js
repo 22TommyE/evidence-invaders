@@ -1,43 +1,4 @@
-/* global Phaser */
-
-// -----------------------------
-//  Data: Midlands Rules of Evidence (exact structure as provided)
-// -----------------------------
-const ruleData = [
-  {
-    prompt: "Evidence is relevant if it has any tendency to make a fact more or less probable...",
-    correctAnswer: "Rule 401",
-    wrongAnswers: ["Rule 403", "Rule 404", "Rule 602"],
-    fullRule:
-      "FRE 401 — Relevant evidence is evidence having any tendency to make a fact more or less probable than it would be without the evidence, and the fact is of consequence in determining the action.",
-  },
-  {
-    prompt: "Excluding Relevant Evidence for Prejudice, Confusion, Waste of Time...",
-    correctAnswer: "Rule 403",
-    wrongAnswers: ["Rule 401", "Rule 608", "Rule 802"],
-    fullRule:
-      "FRE 403 — The court may exclude relevant evidence if its probative value is substantially outweighed by a danger of unfair prejudice, confusing the issues, misleading the jury, undue delay, waste of time, or needless presentation of cumulative evidence.",
-  },
-  {
-    prompt: "Evidence of a person's character or character trait is not admissible to prove action in accordance...",
-    correctAnswer: "Rule 404(a)(1)",
-    wrongAnswers: ["Rule 608", "Rule 406", "Rule 405"],
-    fullRule:
-      "FRE 404(a)(1) — Evidence of a person's character or character trait is not admissible to prove that on a particular occasion the person acted in accordance with the character or trait.",
-  },
-  {
-    prompt: "A statement relating to a startling event or condition, made while the declarant was under stress...",
-    correctAnswer: "803(2) Excited Utterance",
-    wrongAnswers: ["803(1) Present Sense", "804(b)(2) Dying Dec", "803(3) State of Mind"],
-    fullRule:
-      "FRE 803(2) — The excited utterance exception: A statement relating to a startling event or condition, made while the declarant was under the stress of excitement that it caused, is not excluded by the rule against hearsay.",
-  },
-];
-
-function getRuleFullText(q) {
-  if (!q) return "";
-  return q.fullRule || q.prompt || "";
-}
+/* global Phaser, mreData */
 
 // -----------------------------
 //  Helpers
@@ -61,6 +22,39 @@ function safeInitials(s) {
     .toUpperCase()
     .replace(/[^A-Z]/g, "");
   return (up + "AAA").slice(0, 3);
+}
+
+function normalizeQuestion(raw) {
+  if (!raw || typeof raw !== "object") return null;
+
+  const prompt = typeof raw.prompt === "string" ? raw.prompt.trim() : "";
+  const correctAnswer = typeof raw.correctAnswer === "string" ? raw.correctAnswer.trim() : "";
+  const wrongAnswers = Array.isArray(raw.wrongAnswers)
+    ? raw.wrongAnswers.filter((x) => typeof x === "string" && x.trim()).map((x) => x.trim())
+    : [];
+
+  if (!prompt || !correctAnswer || wrongAnswers.length < 3) return null;
+
+  return {
+    id: typeof raw.id === "string" ? raw.id : "",
+    category: typeof raw.category === "string" ? raw.category : "",
+    difficulty: typeof raw.difficulty === "string" ? raw.difficulty : "",
+    prompt,
+    correctAnswer,
+    wrongAnswers: wrongAnswers.slice(0, 3),
+    explanation: typeof raw.explanation === "string" ? raw.explanation : "",
+  };
+}
+
+function getQuestionBank() {
+  if (!Array.isArray(mreData)) return [];
+  return mreData.map(normalizeQuestion).filter(Boolean);
+}
+
+function getQuestionsByDifficulty(difficulty) {
+  const bank = getQuestionBank();
+  const pool = bank.filter((q) => q && q.difficulty === difficulty);
+  return pool.length ? pool : bank;
 }
 
 function loadHighScores() {
@@ -819,6 +813,12 @@ class GameScene extends Phaser.Scene {
     const { width } = this.scale;
 
     const pool = this._getQuestionPool();
+    if (!pool.length) {
+      ui.setButtonsEnabled(false);
+      ui.setStatus("No questions loaded.");
+      return;
+    }
+
     const q = pool[Math.floor(Math.random() * pool.length)];
     this.currentQuestion = q;
 
@@ -945,9 +945,9 @@ class GameScene extends Phaser.Scene {
   _campaignLevels() {
     // Targets are TOTAL score thresholds.
     return [
-      { level: 1, speed: 28, spawnDelay: 700, pool: ruleData.slice(0, 2), targetScore: 500 },
-      { level: 2, speed: 38, spawnDelay: 520, pool: ruleData.slice(2, 4), targetScore: 1000 },
-      { level: 3, speed: 54, spawnDelay: 380, pool: ruleData.slice(0), targetScore: 1500 },
+      { level: 1, speed: 28, spawnDelay: 700, pool: getQuestionsByDifficulty("Regionals"), targetScore: 500 },
+      { level: 2, speed: 38, spawnDelay: 520, pool: getQuestionsByDifficulty("ORCS"), targetScore: 1000 },
+      { level: 3, speed: 54, spawnDelay: 380, pool: getQuestionsByDifficulty("Nationals"), targetScore: 1500 },
     ];
   }
 
@@ -973,9 +973,10 @@ class GameScene extends Phaser.Scene {
   }
 
   _getQuestionPool() {
-    if (this.mode === "endless") return ruleData;
+    const bank = getQuestionBank();
+    if (this.mode === "endless") return bank;
     const lvl = this._campaignLevels().find((x) => x.level === this.level);
-    return (lvl && lvl.pool && lvl.pool.length ? lvl.pool : ruleData);
+    return (lvl && lvl.pool && lvl.pool.length ? lvl.pool : bank);
   }
 
   _onScoreChanged(isInit = false) {
@@ -1071,7 +1072,7 @@ class LearningScene extends Phaser.Scene {
     this.currentCorrectChoiceIndex = -1;
 
     /** Constant slow speed — never scales */
-    this.alienSpeed = 16;
+    this.alienSpeed = 8;
     this.spawnDelayMs = 450;
 
     this.answersCorrect = 0;
@@ -1209,6 +1210,7 @@ class LearningScene extends Phaser.Scene {
     const ui = this.game.__ui;
     const q = this.currentQuestion;
     const correctName = q?.correctAnswer ?? "—";
+    const explanation = q?.explanation || "No explanation available yet.";
 
     this._pauseLearning();
 
@@ -1227,10 +1229,11 @@ class LearningScene extends Phaser.Scene {
       .setDepth(1000);
 
     this.freezeTitle = this.add
-      .text(cx, cy - boxH / 2 + 28, `INCORRECT: ${correctName}`, {
+      .text(cx, cy - boxH / 2 + 28, `Correct Answer: ${correctName}`, {
         fontFamily: '"Press Start 2P", monospace',
         fontSize: "13px",
-        color: "#ff40d7",
+        fontStyle: "bold",
+        color: "#8dff4f",
         align: "center",
         wordWrap: { width: boxW - 28 },
       })
@@ -1239,15 +1242,16 @@ class LearningScene extends Phaser.Scene {
       .setShadow(0, 0, "rgba(255,64,215,0.35)", 12, true, true);
 
     this.freezeBody = this.add
-      .text(cx, cy - boxH / 2 + 78, getRuleFullText(q), {
+      .text(cx, cy - boxH / 2 + 78, explanation, {
         fontFamily: '"Press Start 2P", monospace',
-        fontSize: "8px",
+        fontSize: "12px",
         color: "#e9f7ff",
         align: "center",
         wordWrap: { width: boxW - 28 },
       })
       .setOrigin(0.5, 0)
       .setDepth(1001)
+      .setLineSpacing(6)
       .setShadow(0, 0, "rgba(56,246,255,0.2)", 8, true, true);
 
     this.freezeHint = this.add
@@ -1409,7 +1413,14 @@ class LearningScene extends Phaser.Scene {
     const ui = this.game.__ui;
     const { width } = this.scale;
 
-    const q = ruleData[Math.floor(Math.random() * ruleData.length)];
+    const bank = getQuestionBank();
+    if (!bank.length) {
+      ui.setButtonsEnabled(false);
+      ui.setStatus("No questions loaded.");
+      return;
+    }
+
+    const q = bank[Math.floor(Math.random() * bank.length)];
     this.currentQuestion = q;
 
     const answers = shuffleInPlace([q.correctAnswer, ...q.wrongAnswers].slice(0, 4));

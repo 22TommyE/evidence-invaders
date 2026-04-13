@@ -1,0 +1,8 @@
+{
+    "chat.tools.terminal.autoApprove": {
+        "/^cd '/Users/22ell/Desktop/Evidence Invaders/evidence-invaders' && node --check game\\.js$/": {
+            "approve": true,
+            "matchCommandLine": true
+        }
+    }
+}

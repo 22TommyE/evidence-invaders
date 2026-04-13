@@ -154,5 +154,146 @@ const mreData = [
     correctAnswer: "Rule 805",
     wrongAnswers: ["Rule 801(d)", "Rule 104", "Rule 403"],
     explanation: "The double-hearsay Russian nesting doll. If a police report (Layer 1: Business Record) quotes an eyewitness who saw the crash (Layer 2: Present Sense Impression), BOTH layers must have their own valid exception to get the quote admitted."
-  }
+  },
+  // --- ARTICLE VI: WITNESSES ---
+  {
+    id: "602_PersonalKnowledge",
+    category: "Article VI - Witnesses",
+    difficulty: "Regionals",
+    prompt: "Testifying to a matter without personal knowledge.",
+    correctAnswer: "Rule 602",
+    wrongAnswers: ["Rule 701", "Rule 401", "Rule 801(c)"],
+    explanation: "This is your standard 'Speculation' objection for lay witnesses. A witness can only testify to what they directly saw, heard, or experienced through their own senses. They cannot guess what someone else was thinking."
+  },
+  {
+    id: "608_Truthfulness",
+    category: "Article VI - Witnesses",
+    difficulty: "ORCS",
+    prompt: "Evidence of witness's character for truthfulness or untruthfulness.",
+    correctAnswer: "Rule 608",
+    wrongAnswers: ["Rule 404(a)", "Rule 609", "Rule 406"],
+    explanation: "This is a specific carve-out to the character evidence ban. You CAN attack a witness's reputation for being a liar, but only AFTER their character for truthfulness has been attacked first. You cannot bolster them preemptively."
+  },
+  {
+    id: "609_Convictions",
+    category: "Article VI - Witnesses",
+    difficulty: "Nationals",
+    prompt: "Impeachment by evidence of a criminal conviction.",
+    correctAnswer: "Rule 609",
+    wrongAnswers: ["Rule 404(b)", "Rule 608", "Rule 403"],
+    explanation: "You can bring up a witness's past crimes to prove they are a liar, but the crime MUST be a felony or a crime specifically involving a dishonest act/false statement, and it usually must be less than 10 years old."
+  },
+  {
+    id: "611c_Leading",
+    category: "Article VI - Witnesses",
+    difficulty: "Regionals",
+    prompt: "Question that suggests the answer to the witness.",
+    correctAnswer: "Rule 611(c)",
+    wrongAnswers: ["Rule 602", "Rule 403", "Rule 104"],
+    explanation: "Leading questions are generally forbidden on direct examination, but they are exactly what you MUST use on cross-examination. If a question can be answered with a simple 'Yes' or 'No,' it is likely leading."
+  },
+
+  // --- ARTICLE VII: OPINIONS & EXPERTS ---
+  {
+    id: "701_LayOpinion",
+    category: "Article VII - Experts",
+    difficulty: "ORCS",
+    prompt: "Opinion rationally based on the witness's perception.",
+    correctAnswer: "Rule 701",
+    wrongAnswers: ["Rule 702", "Rule 602", "Rule 401"],
+    explanation: "Lay witnesses CAN give opinions, but only if they are based on common sense observations (e.g., 'he looked drunk,' 'the car was going fast'). They cannot give opinions requiring scientific, technical, or specialized knowledge."
+  },
+  {
+    id: "702_ExpertTestimony",
+    category: "Article VII - Experts",
+    difficulty: "Regionals",
+    prompt: "Opinion based on scientific, technical, or specialized knowledge.",
+    correctAnswer: "Rule 702",
+    wrongAnswers: ["Rule 701", "Rule 703", "Rule 406"],
+    explanation: "The Daubert Standard. Before an expert can give their conclusion, you must lay foundation proving they are qualified, have sufficient facts/data, used reliable methods, and reliably applied those methods to the case."
+  },
+  {
+    id: "703_ExpertBases",
+    category: "Article VII - Experts",
+    difficulty: "Nationals",
+    prompt: "Expert relying on inadmissible facts or data.",
+    correctAnswer: "Rule 703",
+    wrongAnswers: ["Rule 702", "Rule 704", "Rule 805"],
+    explanation: "Experts have a superpower: they can rely on hearsay and other inadmissible evidence to form their opinions, AS LONG AS experts in their particular field would reasonably rely on those same kinds of facts."
+  },
+  {
+    id: "704_UltimateIssue",
+    category: "Article VII - Experts",
+    difficulty: "ORCS",
+    prompt: "Opinion about whether defendant had required mental state.",
+    correctAnswer: "Rule 704",
+    wrongAnswers: ["Rule 702", "Rule 701", "Rule 404(b)"],
+    explanation: "While experts can generally testify to the 'ultimate issue' of the case, they are strictly forbidden from stating an opinion about whether a criminal defendant did or did not have the mental state/condition that constitutes an element of the crime."
+  },
+  // --- AUTHENTICATION & BEST EVIDENCE ---
+  {
+    id: "901_Authentication",
+    category: "Authentication",
+    difficulty: "ORCS",
+    prompt: "Evidence must be proved to be what it claims.",
+    correctAnswer: "Rule 901",
+    wrongAnswers: ["Rule 902", "Rule 1002", "Rule 401"],
+    explanation: "Before any physical evidence (like a murder weapon or a printed email) can be admitted, you must lay foundation showing the item is authentic. This is usually done by having a witness with personal knowledge identify it."
+  },
+  {
+    id: "1002_BestEvidence",
+    category: "Authentication",
+    difficulty: "Nationals",
+    prompt: "Original required to prove content of writing or recording.",
+    correctAnswer: "Rule 1002",
+    wrongAnswers: ["Rule 901", "Rule 803(6)", "Rule 104"],
+    explanation: "If a witness is testifying about what a document says, and the actual words in the document are at issue, you must produce the original document. A witness cannot just summarize an unentered document from memory."
+  },
+
+  // --- FORM & PROCEDURAL OBJECTIONS ---
+  {
+    id: "Form_Narrative",
+    category: "Form Objections",
+    difficulty: "Regionals",
+    prompt: "Question invites a long, unstructured story.",
+    correctAnswer: "Narrative",
+    wrongAnswers: ["Nonresponsive", "Leading", "Argumentative"],
+    explanation: "Questions like 'Tell us everything that happened that day' are objectionable because they prevent opposing counsel from anticipating and objecting to inadmissible evidence (like hearsay) before the witness blurts it out."
+  },
+  {
+    id: "Form_Nonresponsive",
+    category: "Form Objections",
+    difficulty: "Regionals",
+    prompt: "Witness answers beyond the scope of the question.",
+    correctAnswer: "Nonresponsive",
+    wrongAnswers: ["Narrative", "Speculation", "Hearsay"],
+    explanation: "Use this during cross-examination when a witness tries to dodge your 'Yes or No' question by giving a long explanation. You can ask the judge to strike the nonresponsive parts of the answer from the record."
+  },
+  {
+    id: "Form_AskedAnswered",
+    category: "Form Objections",
+    difficulty: "ORCS",
+    prompt: "Question has already been asked and answered.",
+    correctAnswer: "Asked and Answered",
+    wrongAnswers: ["Compound", "Argumentative", "Cumulative"],
+    explanation: "Counsel cannot repeatedly ask the exact same question to emphasize a point or badger the witness. However, if the witness dodged the question the first time, it has been 'asked' but not 'answered', so you can ask it again."
+  },
+  {
+    id: "Form_Compound",
+    category: "Form Objections",
+    difficulty: "Regionals",
+    prompt: "Asking two or more questions at once.",
+    correctAnswer: "Compound",
+    wrongAnswers: ["Narrative", "Leading", "Argumentative"],
+    explanation: "Look for the word 'and' or 'or' in the question. 'Did you go to the store and buy a gun?' is a compound question. The witness might want to answer 'Yes' to the first part and 'No' to the second."
+  },
+  {
+    id: "Form_Argumentative",
+    category: "Form Objections",
+    difficulty: "ORCS",
+    prompt: "Counsel is arguing with or badgering the witness.",
+    correctAnswer: "Argumentative",
+    wrongAnswers: ["Leading", "Asked and Answered", "Compound"],
+    explanation: "Cross-examination can be aggressive, but counsel cannot ask questions that don't seek new facts and instead just try to force the witness to agree to counsel's conclusions (e.g., 'So you're just a liar, aren't you?')."
+  },
 ];
