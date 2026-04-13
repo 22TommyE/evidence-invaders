@@ -208,16 +208,294 @@ function updateStarfield(stars, dt) {
   stars.c.tilePositionY -= 40 * dt;
 }
 
+function createMusicManager() {
+  const themes = {
+    menu: {
+      bpm: 92,
+      steps: [
+        { melody: 72, bass: 48, kick: true, pad: 60 },
+        { melody: null, bass: null },
+        { melody: 75, bass: null },
+        { melody: 79, bass: null, snare: true },
+        { melody: 77, bass: 46, kick: true, pad: 63 },
+        { melody: null, bass: null },
+        { melody: 75, bass: null },
+        { melody: 72, bass: null, snare: true },
+        { melody: 79, bass: 43, kick: true, pad: 60 },
+        { melody: null, bass: null },
+        { melody: 82, bass: null },
+        { melody: 79, bass: null, snare: true },
+        { melody: 84, bass: 46, kick: true, pad: 65 },
+        { melody: 82, bass: null },
+        { melody: 79, bass: null },
+        { melody: 77, bass: null, snare: true },
+      ],
+    },
+    game: {
+      bpm: 138,
+      steps: [
+        { melody: 72, bass: 36, kick: true, pad: 60 },
+        { melody: 79, bass: null },
+        { melody: 84, bass: 36 },
+        { melody: 79, bass: null, snare: true },
+        { melody: 75, bass: 38, kick: true, pad: 63 },
+        { melody: 79, bass: null },
+        { melody: 84, bass: 36 },
+        { melody: 86, bass: null, snare: true },
+        { melody: 88, bass: 41, kick: true, pad: 65 },
+        { melody: 86, bass: null },
+        { melody: 84, bass: 38 },
+        { melody: 79, bass: null, snare: true },
+        { melody: 77, bass: 36, kick: true, pad: 63 },
+        { melody: 79, bass: null },
+        { melody: 84, bass: 36 },
+        { melody: 79, bass: null, snare: true },
+      ],
+    },
+  };
+
+  const state = {
+    context: null,
+    masterGain: null,
+    noiseBuffer: null,
+    muted: false,
+    unlocked: false,
+    currentTheme: "menu",
+    currentPattern: themes.menu,
+    schedulerId: null,
+    nextStepTime: 0,
+    stepIndex: 0,
+    volume: 0.14,
+    onChange: null,
+  };
+
+  function emitChange() {
+    if (typeof state.onChange === "function") {
+      state.onChange({ muted: state.muted, unlocked: state.unlocked, theme: state.currentTheme });
+    }
+  }
+
+  function noteToFrequency(midi) {
+    return 440 * Math.pow(2, (midi - 69) / 12);
+  }
+
+  function createNoiseBuffer(context) {
+    const buffer = context.createBuffer(1, context.sampleRate * 0.2, context.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) {
+      data[i] = Math.random() * 2 - 1;
+    }
+    return buffer;
+  }
+
+  function initContext() {
+    if (state.context) return true;
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return false;
+
+    state.context = new AudioCtx();
+    state.masterGain = state.context.createGain();
+    state.masterGain.gain.value = state.muted ? 0 : state.volume;
+    state.masterGain.connect(state.context.destination);
+    state.noiseBuffer = createNoiseBuffer(state.context);
+    return true;
+  }
+
+  function stopScheduler() {
+    if (state.schedulerId) {
+      window.clearInterval(state.schedulerId);
+      state.schedulerId = null;
+    }
+  }
+
+  function playTone({ midi, time, duration, type = "square", gain = 0.08, filterFreq = 2200, detune = 0 }) {
+    if (!state.context || midi == null) return;
+
+    const oscillator = state.context.createOscillator();
+    const filter = state.context.createBiquadFilter();
+    const envelope = state.context.createGain();
+
+    oscillator.type = type;
+    oscillator.frequency.setValueAtTime(noteToFrequency(midi), time);
+    if (detune) oscillator.detune.setValueAtTime(detune, time);
+
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(filterFreq, time);
+
+    envelope.gain.setValueAtTime(0.0001, time);
+    envelope.gain.exponentialRampToValueAtTime(gain, time + 0.015);
+    envelope.gain.exponentialRampToValueAtTime(0.0001, time + duration);
+
+    oscillator.connect(filter);
+    filter.connect(envelope);
+    envelope.connect(state.masterGain);
+
+    oscillator.start(time);
+    oscillator.stop(time + duration + 0.05);
+  }
+
+  function playKick(time) {
+    if (!state.context) return;
+
+    const osc = state.context.createOscillator();
+    const env = state.context.createGain();
+    const filter = state.context.createBiquadFilter();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(132, time);
+    osc.frequency.exponentialRampToValueAtTime(52, time + 0.11);
+
+    filter.type = "lowpass";
+    filter.frequency.setValueAtTime(220, time);
+
+    env.gain.setValueAtTime(0.0001, time);
+    env.gain.exponentialRampToValueAtTime(0.4, time + 0.01);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.16);
+
+    osc.connect(filter);
+    filter.connect(env);
+    env.connect(state.masterGain);
+
+    osc.start(time);
+    osc.stop(time + 0.2);
+  }
+
+  function playSnare(time) {
+    if (!state.context || !state.noiseBuffer) return;
+
+    const noise = state.context.createBufferSource();
+    const filter = state.context.createBiquadFilter();
+    const env = state.context.createGain();
+
+    noise.buffer = state.noiseBuffer;
+    filter.type = "highpass";
+    filter.frequency.setValueAtTime(1400, time);
+
+    env.gain.setValueAtTime(0.0001, time);
+    env.gain.exponentialRampToValueAtTime(0.22, time + 0.01);
+    env.gain.exponentialRampToValueAtTime(0.0001, time + 0.11);
+
+    noise.connect(filter);
+    filter.connect(env);
+    env.connect(state.masterGain);
+
+    noise.start(time);
+    noise.stop(time + 0.13);
+  }
+
+  function scheduleStep(theme, step, time, stepDuration) {
+    if (!theme) return;
+    const data = theme.steps[step % theme.steps.length];
+    if (!data) return;
+
+    if (data.melody != null) {
+      playTone({ midi: data.melody, time, duration: stepDuration * 0.82, type: "square", gain: 0.085, filterFreq: 2000 });
+    }
+
+    if (data.pad != null) {
+      playTone({ midi: data.pad, time, duration: stepDuration * 1.65, type: "triangle", gain: 0.03, filterFreq: 1200 });
+    }
+
+    if (data.bass != null) {
+      playTone({ midi: data.bass, time, duration: stepDuration * 0.95, type: "triangle", gain: 0.055, filterFreq: 700 });
+    }
+
+    if (data.kick) playKick(time);
+    if (data.snare) playSnare(time + stepDuration * 0.5);
+  }
+
+  function schedule() {
+    if (!state.context || !state.currentPattern || state.muted) return;
+
+    const now = state.context.currentTime;
+    const stepDuration = 60 / state.currentPattern.bpm / 4;
+    const horizon = now + 0.12;
+
+    while (state.nextStepTime < horizon) {
+      scheduleStep(state.currentPattern, state.stepIndex, state.nextStepTime, stepDuration);
+      state.nextStepTime += stepDuration;
+      state.stepIndex = (state.stepIndex + 1) % state.currentPattern.steps.length;
+    }
+  }
+
+  function startScheduler() {
+    if (state.schedulerId || !state.context || !state.currentPattern) return;
+    state.stepIndex = 0;
+    state.nextStepTime = state.context.currentTime + 0.05;
+    state.schedulerId = window.setInterval(schedule, 25);
+    schedule();
+  }
+
+  function unlock() {
+    if (!initContext()) return;
+    state.unlocked = true;
+    if (state.context.state === "suspended") {
+      state.context.resume().catch(() => {});
+    }
+    startScheduler();
+    emitChange();
+  }
+
+  function setTheme(themeName) {
+    state.currentTheme = themes[themeName] ? themeName : "menu";
+    state.currentPattern = themes[state.currentTheme];
+    if (state.unlocked) {
+      startScheduler();
+    }
+    emitChange();
+  }
+
+  function setMuted(muted) {
+    state.muted = !!muted;
+    if (!initContext()) {
+      emitChange();
+      return;
+    }
+    state.masterGain.gain.setTargetAtTime(state.muted ? 0 : state.volume, state.context.currentTime, 0.01);
+    emitChange();
+  }
+
+  function toggleMuted() {
+    setMuted(!state.muted);
+    if (!state.muted) {
+      unlock();
+    }
+    return state.muted;
+  }
+
+  function destroy() {
+    stopScheduler();
+    if (state.context) {
+      state.context.close().catch(() => {});
+      state.context = null;
+      state.masterGain = null;
+    }
+  }
+
+  return {
+    unlock,
+    setTheme,
+    setMuted,
+    toggleMuted,
+    destroy,
+    getMuted: () => state.muted,
+    getTheme: () => state.currentTheme,
+    getUnlocked: () => state.unlocked,
+    onStateChange: null,
+  };
+}
+
 // -----------------------------
 //  UI bridge (HTML HUD buttons + overlay)
 // -----------------------------
-function createUIBridge() {
+function createUIBridge(music) {
   const hudEl = document.querySelector(".hud");
   const modeEl = document.getElementById("mode");
   const scoreEl = document.getElementById("score");
   const livesEl = document.getElementById("lives");
   const accuracyEl = document.getElementById("accuracy");
   const accuracyToggleEl = document.getElementById("accuracy-toggle");
+  const musicToggleEl = document.getElementById("music-toggle");
   const statusEl = document.getElementById("status");
 
   const overlayEl = document.getElementById("gameover-overlay");
@@ -307,6 +585,24 @@ function createUIBridge() {
     },
   };
 
+  const syncMusicToggle = () => {
+    if (!musicToggleEl || !music) return;
+    const muted = typeof music.getMuted === "function" ? music.getMuted() : false;
+    musicToggleEl.textContent = muted ? "Music: off" : "Music: on";
+    musicToggleEl.setAttribute("aria-pressed", muted ? "false" : "true");
+  };
+
+  if (musicToggleEl && music) {
+    music.onStateChange = syncMusicToggle;
+    syncMusicToggle();
+
+    musicToggleEl.addEventListener("click", () => {
+      if (typeof music.unlock === "function") music.unlock();
+      if (typeof music.toggleMuted === "function") music.toggleMuted();
+      syncMusicToggle();
+    });
+  }
+
   const safeChoiceHandler = (choiceIndex) => {
     if (typeof ui.onChoice === "function") ui.onChoice(choiceIndex);
   };
@@ -388,6 +684,7 @@ class MainMenuScene extends Phaser.Scene {
 
   create() {
     const ui = this.game.__ui;
+    if (this.game.__music) this.game.__music.setTheme("menu");
     ui.hideOverlay();
     ui.setHudVisible(false);
     ui.setStatus("");
@@ -500,6 +797,7 @@ class MainMenuScene extends Phaser.Scene {
 
     const startMode = (mode) => {
       this.game.__selectedMode = mode;
+      if (this.game.__music) this.game.__music.unlock();
       if (mode === "campaign") {
         this.scene.start("LevelSelectScene");
         return;
@@ -560,6 +858,7 @@ class LevelSelectScene extends Phaser.Scene {
 
   create() {
     const ui = this.game.__ui;
+    if (this.game.__music) this.game.__music.setTheme("menu");
     ui.hideOverlay();
     ui.setHudVisible(false);
     ui.setStatus("");
@@ -592,6 +891,7 @@ class LevelSelectScene extends Phaser.Scene {
       const selectedCategory = label === "All Rules (Final Exam)" ? null : label;
       this.game.__selectedMode = "campaign";
       this.game.__selectedCampaignCategory = selectedCategory;
+      if (this.game.__music) this.game.__music.unlock();
       this.scene.start("NameInputScene", {
         mode: "campaign",
         selectedCategory,
@@ -660,6 +960,7 @@ class NameInputScene extends Phaser.Scene {
 
   create() {
     const ui = this.game.__ui;
+    if (this.game.__music) this.game.__music.setTheme(this.mode === "learning" ? "menu" : "menu");
     ui.hideOverlay();
     ui.setHudVisible(false);
     ui.setStatus("");
@@ -752,6 +1053,7 @@ class NameInputScene extends Phaser.Scene {
   _confirm() {
     const initials = this.indices.map((i) => this.letters[i]).join("");
     this.game.__playerInitials = initials;
+    if (this.game.__music) this.game.__music.unlock();
     if (this.mode === "learning") {
       this.scene.start("LearningScene", { initials });
       return;
@@ -784,6 +1086,7 @@ class GameScene extends Phaser.Scene {
     this.isCountingDown = false;
     this._countdownEvent = null;
     this.currentQuestion = null;
+    this.previousQuestionId = null;
     this.currentAnswers = [];
     this.currentCorrectChoiceIndex = -1;
 
@@ -803,6 +1106,7 @@ class GameScene extends Phaser.Scene {
 
   create() {
     const ui = this.game.__ui;
+    if (this.game.__music) this.game.__music.setTheme("game");
     ui.hideOverlay();
     ui.setHudVisible(true);
     ui.setLearningHud(false);
@@ -1020,8 +1324,13 @@ class GameScene extends Phaser.Scene {
       return;
     }
 
-    const q = pool[Math.floor(Math.random() * pool.length)];
+    let q = pool[Math.floor(Math.random() * pool.length)];
+    // Prevent the same question from appearing twice in a row
+    while (q.id === this.previousQuestionId && pool.length > 1) {
+      q = pool[Math.floor(Math.random() * pool.length)];
+    }
     this.currentQuestion = q;
+    this.previousQuestionId = q.id;
 
     const answers = shuffleInPlace([q.correctAnswer, ...q.wrongAnswers].slice(0, 4));
     this.currentAnswers = answers;
@@ -1282,6 +1591,7 @@ class LearningScene extends Phaser.Scene {
     this.isCountingDown = false;
     this._countdownEvent = null;
     this.currentQuestion = null;
+    this.previousQuestionId = null;
     this.currentAnswers = [];
     this.currentCorrectChoiceIndex = -1;
 
@@ -1308,6 +1618,7 @@ class LearningScene extends Phaser.Scene {
 
   create() {
     const ui = this.game.__ui;
+    if (this.game.__music) this.game.__music.setTheme("game");
     ui.hideOverlay();
     ui.setHudVisible(true);
     ui.setLearningHud(true);
@@ -1656,8 +1967,13 @@ class LearningScene extends Phaser.Scene {
       return;
     }
 
-    const q = bank[Math.floor(Math.random() * bank.length)];
+    let q = bank[Math.floor(Math.random() * bank.length)];
+    // Prevent the same question from appearing twice in a row
+    while (q.id === this.previousQuestionId && bank.length > 1) {
+      q = bank[Math.floor(Math.random() * bank.length)];
+    }
     this.currentQuestion = q;
+    this.previousQuestionId = q.id;
 
     const answers = shuffleInPlace([q.correctAnswer, ...q.wrongAnswers].slice(0, 4));
     this.currentAnswers = answers;
@@ -1768,6 +2084,7 @@ class GameOverScene extends Phaser.Scene {
 
   create() {
     const ui = this.game.__ui;
+    if (this.game.__music) this.game.__music.setTheme("menu");
     ui.hideOverlay();
     ui.setHudVisible(false);
     ui.setButtonsEnabled(false);
@@ -1851,7 +2168,8 @@ class GameOverScene extends Phaser.Scene {
 //  Boot the game
 // -----------------------------
 function boot() {
-  const ui = createUIBridge();
+  const music = createMusicManager();
+  const ui = createUIBridge(music);
 
   const config = {
     type: Phaser.AUTO,
@@ -1878,9 +2196,14 @@ function boot() {
 
   // Attach shared state for scenes.
   game.__ui = ui;
+  game.__music = music;
   game.__playerInitials = "AAA";
   game.__selectedMode = "campaign";
   game.__selectedCampaignCategory = null;
+
+  const unlockMusic = () => music.unlock();
+  document.addEventListener("pointerdown", unlockMusic, { once: true, passive: true });
+  document.addEventListener("keydown", unlockMusic, { once: true });
 
   // Bulletproof linkage: HUD buttons / 1–4 keys route to the active gameplay scene.
   ui.onChoice = (choiceIndex) => {

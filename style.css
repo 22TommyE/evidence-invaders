@@ -46,10 +46,47 @@ body {
 }
 
 .subtitle {
-  margin-top: 8px;
   color: var(--muted);
   font-size: 10px;
   line-height: 1.6;
+}
+
+.header-controls {
+  margin-top: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.music-toggle {
+  font: inherit;
+  font-size: 8px;
+  line-height: 1;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(56, 246, 255, 0.35);
+  color: var(--cyan);
+  background: rgba(0, 0, 0, 0.28);
+  cursor: pointer;
+  transition: transform 120ms ease, background 120ms ease, border-color 120ms ease,
+    color 120ms ease;
+}
+
+.music-toggle:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 64, 215, 0.7);
+  background: rgba(255, 64, 215, 0.08);
+}
+
+.music-toggle[aria-pressed="true"] {
+  border-color: rgba(141, 255, 79, 0.65);
+  color: var(--lime);
+}
+
+.music-toggle[aria-pressed="false"] {
+  color: var(--muted);
 }
 
 .main {

@@ -1,4 +1,24 @@
 const mreData = [
+  // --- ARTICLE I: GENERAL PROVISIONS & TRAPS ---
+  {
+    id: "104a_Preliminary",
+    category: "Article I - General Provisions",
+    difficulty: "Nationals",
+    prompt: "Judge deciding admissibility, privileges, or qualifications.",
+    correctAnswer: "Rule 104(a)",
+    wrongAnswers: ["Rule 104(b)", "Rule 401", "Rule 602"],
+    explanation: "The golden rule of bench arguments. Under 104(a), the judge is not bound by the rules of evidence (except privilege) when deciding if evidence is admissible. You can use hearsay to prove to the judge that a hearsay exception applies!"
+  },
+  {
+    id: "106_Completeness",
+    category: "Article I - General Provisions",
+    difficulty: "Nationals",
+    prompt: "Introducing remainder of a writing for fairness.",
+    correctAnswer: "Rule 106",
+    wrongAnswers: ["Rule 104(a)", "Rule 403", "Rule 801(d)(2)"],
+    explanation: "The Rule of Completeness. If opposing counsel reads one sentence of a document to take it out of context, you can interrupt and force them to read the rest of the paragraph right then and there. Crucially, in Midlands, this ONLY applies to material actually provided in the case packet."
+  },
+
   // --- ARTICLE IV: RELEVANCE & CHARACTER ---
   {
     id: "401_Relevance",
@@ -44,6 +64,35 @@ const mreData = [
     correctAnswer: "Rule 404(b)",
     wrongAnswers: ["Rule 406", "Rule 609", "Rule 403"],
     explanation: "The 'MIAMI COP' exception (Motive, Intent, Absence of Mistake, Identity, Common Plan). If you offer prior bad acts, you MUST clearly state the specific non-character purpose you are offering it for."
+  },
+
+  // --- ARTICLE IV: POLICY EXCLUSIONS ---
+  {
+    id: "407_Remedial",
+    category: "Article IV - Relevance",
+    difficulty: "ORCS",
+    prompt: "Measures taken later that would have made injury less likely.",
+    correctAnswer: "Rule 407",
+    wrongAnswers: ["Rule 404(b)", "Rule 403", "Rule 411"],
+    explanation: "A classic civil trial trap. You cannot use the fact that a company fixed a hazard AFTER an accident to prove they were negligent BEFORE the accident. However, you can use it to prove ownership or that a fix was feasible."
+  },
+  {
+    id: "408_Compromise",
+    category: "Article IV - Relevance",
+    difficulty: "Nationals",
+    prompt: "Offers, promises, or conduct during settlement negotiations.",
+    correctAnswer: "Rule 408",
+    wrongAnswers: ["Rule 404(b)", "Rule 801(d)(2)", "Rule 411"],
+    explanation: "You cannot bring up the fact that a party offered to settle the case or pay damages to prove they admitted fault. The court wants to encourage settlements without fear it will be used against them at trial."
+  },
+  {
+    id: "411_Insurance",
+    category: "Article IV - Relevance",
+    difficulty: "Regionals",
+    prompt: "Evidence that a person was or was not insured.",
+    correctAnswer: "Rule 411",
+    wrongAnswers: ["Rule 408", "Rule 403", "Rule 404(a)"],
+    explanation: "The 'I-word' is strictly forbidden to prove someone acted negligently. Juries shouldn't decide liability just because a rich insurance company will foot the bill. It can only be used to show bias or agency."
   },
 
   // --- ARTICLE VIII: HEARSAY ---
@@ -296,4 +345,138 @@ const mreData = [
     wrongAnswers: ["Leading", "Asked and Answered", "Compound"],
     explanation: "Cross-examination can be aggressive, but counsel cannot ask questions that don't seek new facts and instead just try to force the witness to agree to counsel's conclusions (e.g., 'So you're just a liar, aren't you?')."
   },
+
+  // --- ARTICLE IV: CHARACTER (EXPANDED) ---
+  {
+    id: "405_MethodsOfProof",
+    category: "Article IV - Character",
+    difficulty: "Nationals",
+    prompt: "Proving character by reputation or opinion testimony.",
+    correctAnswer: "Rule 405",
+    wrongAnswers: ["Rule 404(a)", "Rule 406", "Rule 608"],
+    explanation: "When character evidence is actually allowed, you can usually only prove it through witnesses talking about reputation or their personal opinion. Specific instances of conduct are only allowed on cross-examination or if character is an essential element."
+  },
+
+  // --- ARTICLE VI: WITNESSES (EXPANDED) ---
+  {
+    id: "611b_ScopeOfCross",
+    category: "Article VI - Witnesses",
+    difficulty: "Regionals",
+    prompt: "Cross-examination exceeding direct examination subject matter.",
+    correctAnswer: "Rule 611(b)",
+    wrongAnswers: ["Rule 611(c)", "Rule 403", "Rule 608"],
+    explanation: "Unlike real federal court, AMTA cross-examinations are NOT limited to the scope of the direct examination. If opposing counsel objects to 'outside the scope,' kindly remind the judge of the Midlands rule variance."
+  },
+  {
+    id: "615_Sequestration",
+    category: "Article VI - Witnesses",
+    difficulty: "ORCS",
+    prompt: "Excluding witnesses from hearing other testimony.",
+    correctAnswer: "Rule 615",
+    wrongAnswers: ["Rule 611(c)", "Rule 104(a)", "Rule 403"],
+    explanation: "In AMTA, this is 'constructive sequestration.' All witnesses are legally assumed to be sitting in the hallway, meaning they cannot testify about what happened in the courtroom before they took the stand (except for the designated party representative)."
+  },
+  {
+    id: "612_RefreshingMemory",
+    category: "Article VI - Witnesses",
+    difficulty: "ORCS",
+    prompt: "Using a writing to refresh a witness's memory.",
+    correctAnswer: "Rule 612",
+    wrongAnswers: ["Rule 803(5)", "Rule 803(6)", "Rule 1002"],
+    explanation: "If a witness forgets a detail, you can show them a document to jog their memory. The document itself is NOT admitted into evidence; they just look at it, put it down, and testify from their newly restored memory."
+  },
+
+  // --- ARTICLE VIII: HEARSAY (EXPANDED) ---
+  {
+    id: "803_5_RecordedRecollection",
+    category: "Article VIII - Hearsay",
+    difficulty: "Nationals",
+    prompt: "Record read into evidence when witness forgets.",
+    correctAnswer: "Rule 803(5)",
+    wrongAnswers: ["Rule 803(6)", "Rule 612", "Rule 801(d)(1)"],
+    explanation: "If refreshing their memory under 612 completely fails, you can use 803(5) to literally read the document to the jury. However, the document itself CANNOT be entered as an exhibit unless offered by the opposing party."
+  },
+  {
+    id: "801a_StatementDef",
+    category: "Article VIII - Hearsay",
+    difficulty: "ORCS",
+    prompt: "Nonverbal conduct intended as an assertion.",
+    correctAnswer: "Rule 801(a)",
+    wrongAnswers: ["Rule 801(c)", "Rule 803(1)", "Rule 404(a)"],
+    explanation: "Hearsay isn't just spoken words. If a witness testifies that someone nodded their head 'yes' or pointed a finger at the defendant to identify them, that is a statement and is subject to hearsay objections."
+  },
+  {
+    id: "801d2D_AgentEmployee",
+    category: "Article VIII - Hearsay",
+    difficulty: "Nationals",
+    prompt: "Statement by opposing party's agent or employee.",
+    correctAnswer: "Rule 801(d)(2)(D)",
+    wrongAnswers: ["Rule 804(b)(3)", "Rule 803(6)", "Rule 801(d)(1)"],
+    explanation: "The corporate hearsay loophole. If you are prosecuting or suing a company, anything said by their employees on the job, within the scope of their employment, comes in as an opposing party statement."
+  },
+  {
+    id: "803_8_PublicRecords",
+    category: "Article VIII - Hearsay",
+    difficulty: "Nationals",
+    prompt: "Record of a public office's activities or observations.",
+    correctAnswer: "Rule 803(8)",
+    wrongAnswers: ["Rule 803(6)", "Rule 902", "Rule 805"],
+    explanation: "Similar to business records but for government entities. Crucially, in a criminal case, police reports are specifically EXCLUDED from this exception if offered against the defendant to protect their Constitutional confrontation rights."
+  },
+  {
+    id: "803_18_Treatises",
+    category: "Article VIII - Hearsay",
+    difficulty: "Nationals",
+    prompt: "Statement in a reliable learned treatise or periodical.",
+    correctAnswer: "Rule 803(18)",
+    wrongAnswers: ["Rule 703", "Rule 803(6)", "Rule 803(8)"],
+    explanation: "You can read from a scientific book to cross-examine an expert. But in AMTA, you can't just cite a random title—the entirety of the treatise or pamphlet must actually be provided in the case packet for this rule to be applicable."
+  },
+
+  // --- AUTHENTICATION (EXPANDED) ---
+  {
+    id: "902_SelfAuthenticating",
+    category: "Authentication",
+    difficulty: "ORCS",
+    prompt: "Evidence requiring no extrinsic proof of authenticity.",
+    correctAnswer: "Rule 902",
+    wrongAnswers: ["Rule 901", "Rule 1002", "Rule 803(6)"],
+    explanation: "Certain documents, like certified public records, official publications, or notarized documents, authenticate themselves. You don't need to lay foundation through a witness that it is what it claims to be."
+  },  {
+    id: "902_11_CertifiedRecords",
+    category: "Authentication",
+    difficulty: "Nationals",
+    prompt: "Certified domestic records of a regularly conducted activity.",
+    correctAnswer: "Rule 902(11)",
+    wrongAnswers: ["Rule 803(6)", "Rule 901", "Rule 1002"],
+    explanation: "A business record can authenticate itself without a witness if it has a proper certification. However, you MUST give opposing counsel notice. In Midlands, this notice requirement is satisfied if you announce it at the Captains' Meeting."
+  },
+  // --- FORM OBJECTIONS (EXPANDED) ---
+  {
+    id: "Form_LackOfFoundation",
+    category: "Form Objections",
+    difficulty: "Regionals",
+    prompt: "Failing to establish prerequisites before introducing evidence.",
+    correctAnswer: "Lack of Foundation",
+    wrongAnswers: ["Speculation", "Narrative", "Assuming Facts"],
+    explanation: "The ultimate pace-breaker. Use this when opposing counsel tries to ask about a document or conversation before establishing the who, what, when, and where. It forces them to back up and do the procedural work."
+  },
+  {
+    id: "Form_AssumingFacts",
+    category: "Form Objections",
+    difficulty: "ORCS",
+    prompt: "Question contains unproven factual assertions.",
+    correctAnswer: "Assuming Facts Not in Evidence",
+    wrongAnswers: ["Compound", "Argumentative", "Leading"],
+    explanation: "An objection for questions like: 'When did you stop beating your dog?' This catches opposing counsel trying to sneak unproven, damaging facts onto the record disguised inside a question."
+  },
+  {
+    id: "Form_Vague",
+    category: "Form Objections",
+    difficulty: "Regionals",
+    prompt: "Question is unclear or susceptible to multiple meanings.",
+    correctAnswer: "Vague and Ambiguous",
+    wrongAnswers: ["Compound", "Nonresponsive", "Argumentative"],
+    explanation: "Use this when opposing counsel asks a question so broad or confusing that the witness might accidentally agree to something damaging because they didn't understand the phrasing (e.g., 'Did you do it then?')."
+  }
 ];
