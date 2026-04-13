@@ -57,6 +57,79 @@ function getQuestionsByDifficulty(difficulty) {
   return pool.length ? pool : bank;
 }
 
+function getQuestionCategories() {
+  const seen = new Set();
+  const out = [];
+  const bank = getQuestionBank();
+
+  bank.forEach((q) => {
+    if (!q || typeof q.category !== "string") return;
+    const category = q.category.trim();
+    if (!category || seen.has(category)) return;
+    seen.add(category);
+    out.push(category);
+  });
+
+  return out;
+}
+
+const CAMPAIGN_CATEGORY_COMBINATIONS = {
+  "Article IV - Relevance & Character": ["Article IV - Relevance", "Article IV - Character"],
+  "Authentication & Form Objections": ["Authentication", "Form Objections"],
+};
+
+const CAMPAIGN_CATEGORY_ORDER = [
+  "Article IV - Relevance & Character",
+  "Article VI - Witnesses",
+  "Article VII - Experts",
+  "Article VIII - Hearsay",
+  "Authentication & Form Objections",
+];
+
+function getCampaignCategoryOptions() {
+  const raw = getQuestionCategories();
+  const rawSet = new Set(raw);
+  const consumed = new Set();
+  const presentLabels = new Set();
+
+  Object.entries(CAMPAIGN_CATEGORY_COMBINATIONS).forEach(([label, categories]) => {
+    const present = categories.filter((c) => rawSet.has(c));
+    if (!present.length) return;
+    if (present.length === categories.length) {
+      presentLabels.add(label);
+      present.forEach((c) => consumed.add(c));
+      return;
+    }
+    // If only one side exists, keep the available original category visible.
+    present.forEach((c) => {
+      presentLabels.add(c);
+      consumed.add(c);
+    });
+  });
+
+  raw.forEach((category) => {
+    if (consumed.has(category)) return;
+    presentLabels.add(category);
+  });
+
+  const ordered = [];
+  CAMPAIGN_CATEGORY_ORDER.forEach((label) => {
+    if (presentLabels.has(label)) ordered.push(label);
+  });
+
+  [...presentLabels].forEach((label) => {
+    if (!ordered.includes(label)) ordered.push(label);
+  });
+
+  return ordered;
+}
+
+function expandCampaignCategorySelection(selectionLabel) {
+  if (!selectionLabel) return [];
+  const merged = CAMPAIGN_CATEGORY_COMBINATIONS[selectionLabel];
+  return Array.isArray(merged) ? merged.slice() : [selectionLabel];
+}
+
 function loadHighScores() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -427,6 +500,10 @@ class MainMenuScene extends Phaser.Scene {
 
     const startMode = (mode) => {
       this.game.__selectedMode = mode;
+      if (mode === "campaign") {
+        this.scene.start("LevelSelectScene");
+        return;
+      }
       this.scene.start("NameInputScene", { mode });
     };
 
@@ -476,6 +553,96 @@ class MainMenuScene extends Phaser.Scene {
   }
 }
 
+class LevelSelectScene extends Phaser.Scene {
+  constructor() {
+    super({ key: "LevelSelectScene" });
+  }
+
+  create() {
+    const ui = this.game.__ui;
+    ui.hideOverlay();
+    ui.setHudVisible(false);
+    ui.setStatus("");
+    ui.setModeLabel("—");
+
+    this.cameras.main.setBackgroundColor("#000000");
+    this.stars = createStarfield(this);
+
+    const { width, height } = this.scale;
+    const categories = getCampaignCategoryOptions();
+    const buttonLabels = [...categories, "All Rules (Final Exam)"];
+    const top = 120;
+    const bottom = height - 96;
+
+    this.add
+      .text(width / 2, 64, "LEVEL SELECT", neonTextStyle(22, "#38f6ff"))
+      .setOrigin(0.5, 0.5)
+      .setShadow(0, 0, "rgba(56,246,255,0.35)", 14, true, true);
+
+    this.add
+      .text(width / 2, 92, "Choose a category for Campaign Mode", neonTextStyle(9, "rgba(233,247,255,0.75)"))
+      .setOrigin(0.5, 0.5)
+      .setShadow(0, 0, "rgba(255,64,215,0.2)", 8, true, true);
+
+    const startY = top;
+    const availableHeight = Math.max(140, bottom - top);
+    const step = Math.min(38, availableHeight / Math.max(1, buttonLabels.length));
+
+    const selectCategory = (label) => {
+      const selectedCategory = label === "All Rules (Final Exam)" ? null : label;
+      this.game.__selectedMode = "campaign";
+      this.game.__selectedCampaignCategory = selectedCategory;
+      this.scene.start("NameInputScene", {
+        mode: "campaign",
+        selectedCategory,
+      });
+    };
+
+    buttonLabels.forEach((label, idx) => {
+      const y = startY + idx * step;
+      if (y > bottom - 10) return;
+
+      const isFinalExam = label === "All Rules (Final Exam)";
+      const color = isFinalExam ? "#8dff4f" : "#ff40d7";
+      const btn = this.add
+        .text(width / 2, y, label, neonTextStyle(12, color))
+        .setOrigin(0.5, 0.5)
+        .setShadow(0, 0, isFinalExam ? "rgba(141,255,79,0.25)" : "rgba(255,64,215,0.3)", 10, true, true)
+        .setInteractive({ useHandCursor: true });
+
+      btn.on("pointerdown", () => selectCategory(label));
+      btn.on("pointerover", () => btn.setScale(1.03));
+      btn.on("pointerout", () => btn.setScale(1));
+    });
+
+    const backBtn = this.add
+      .text(width / 2, height - 34, "BACK TO MAIN MENU", neonTextStyle(10, "rgba(233,247,255,0.82)"))
+      .setOrigin(0.5, 0.5)
+      .setShadow(0, 0, "rgba(56,246,255,0.2)", 8, true, true)
+      .setInteractive({ useHandCursor: true });
+
+    backBtn.on("pointerdown", () => {
+      this.scene.start("MainMenuScene");
+    });
+
+    const esc = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    esc.on("down", () => this.scene.start("MainMenuScene"));
+
+    this.scale.on("resize", (gameSize) => {
+      const w = gameSize.width;
+      const h = gameSize.height;
+      this.stars.a.setSize(w, h);
+      this.stars.b.setSize(w, h);
+      this.stars.c.setSize(w, h);
+      backBtn.setPosition(w / 2, h - 34);
+    });
+  }
+
+  update(_, delta) {
+    updateStarfield(this.stars, delta / 1000);
+  }
+}
+
 class NameInputScene extends Phaser.Scene {
   constructor() {
     super({ key: "NameInputScene" });
@@ -483,10 +650,12 @@ class NameInputScene extends Phaser.Scene {
     this.slot = 0;
     this.indices = [0, 0, 0];
     this.mode = "campaign";
+    this.selectedCategory = null;
   }
 
   init(data) {
     this.mode = data?.mode || this.game.__selectedMode || "campaign";
+    this.selectedCategory = data?.selectedCategory ?? this.game.__selectedCampaignCategory ?? null;
   }
 
   create() {
@@ -587,7 +756,11 @@ class NameInputScene extends Phaser.Scene {
       this.scene.start("LearningScene", { initials });
       return;
     }
-    this.scene.start("GameScene", { initials, mode: this.mode });
+    this.scene.start("GameScene", {
+      initials,
+      mode: this.mode,
+      selectedCategory: this.selectedCategory,
+    });
   }
 }
 
@@ -616,11 +789,14 @@ class GameScene extends Phaser.Scene {
 
     this.alienSpeed = 38; // px/sec
     this.spawnDelayMs = 350;
+    this.selectedCategory = null;
+    this.menuBtn = null;
   }
 
   init(data) {
     this.initials = safeInitials(data?.initials || this.game.__playerInitials || "AAA");
     this.mode = data?.mode || this.game.__selectedMode || "campaign";
+    this.selectedCategory = data?.selectedCategory ?? this.game.__selectedCampaignCategory ?? null;
     this.level = 1;
     this.levelTransitioning = false;
   }
@@ -645,6 +821,7 @@ class GameScene extends Phaser.Scene {
     this.stars = createStarfield(this);
 
     this._createShip();
+    this._createReturnToMenuButton();
     this._bindKeyboard();
 
     ui.setStatus(`Player: ${this.initials}`);
@@ -658,6 +835,7 @@ class GameScene extends Phaser.Scene {
       this.stars.b.setSize(w, h);
       this.stars.c.setSize(w, h);
       this._positionShip();
+      if (this.menuBtn) this.menuBtn.setPosition(w - 14, 16);
     });
   }
 
@@ -806,6 +984,29 @@ class GameScene extends Phaser.Scene {
     keys.n2.on("down", onDown(1));
     keys.n3.on("down", onDown(2));
     keys.n4.on("down", onDown(3));
+
+    const esc = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
+    esc.on("down", () => {
+      this.scene.start("MainMenuScene");
+    });
+  }
+
+  _createReturnToMenuButton() {
+    const { width } = this.scale;
+    this.menuBtn = this.add
+      .text(width - 14, 16, "RETURN TO MAIN MENU", {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: "8px",
+        color: "rgba(233,247,255,0.9)",
+      })
+      .setOrigin(1, 0)
+      .setDepth(20)
+      .setShadow(0, 0, "rgba(56,246,255,0.25)", 8, true, true)
+      .setInteractive({ useHandCursor: true });
+
+    this.menuBtn.on("pointerdown", () => {
+      this.scene.start("MainMenuScene");
+    });
   }
 
   _spawnNextAlien() {
@@ -967,7 +1168,8 @@ class GameScene extends Phaser.Scene {
 
     // Campaign
     const lvl = this._campaignLevels().find((x) => x.level === this.level) || this._campaignLevels()[0];
-    ui.setModeLabel(`Level: ${lvl.level}`);
+    const scope = this.selectedCategory ? ` | ${this.selectedCategory}` : " | All Rules";
+    ui.setModeLabel(`Level: ${lvl.level}${scope}`);
     this.alienSpeed = lvl.speed;
     this.spawnDelayMs = lvl.spawnDelay;
   }
@@ -975,8 +1177,20 @@ class GameScene extends Phaser.Scene {
   _getQuestionPool() {
     const bank = getQuestionBank();
     if (this.mode === "endless") return bank;
+
+    const selectedCategories = expandCampaignCategorySelection(this.selectedCategory);
+    const selectedSet = new Set(selectedCategories);
+    const basePool = selectedSet.size
+      ? bank.filter((q) => q && selectedSet.has(q.category))
+      : bank;
+    const fallbackBasePool = basePool.length ? basePool : bank;
+
     const lvl = this._campaignLevels().find((x) => x.level === this.level);
-    return (lvl && lvl.pool && lvl.pool.length ? lvl.pool : bank);
+    if (!lvl || !lvl.pool || !lvl.pool.length) return fallbackBasePool;
+
+    const levelIds = new Set(lvl.pool.map((q) => q.id));
+    const filtered = fallbackBasePool.filter((q) => levelIds.has(q.id));
+    return filtered.length ? filtered : fallbackBasePool;
   }
 
   _onScoreChanged(isInit = false) {
@@ -1085,6 +1299,7 @@ class LearningScene extends Phaser.Scene {
     this.freezeHint = null;
     this._freezeSpaceKey = null;
     this._escKey = null;
+    this.menuBtn = null;
   }
 
   init(data) {
@@ -1111,6 +1326,7 @@ class LearningScene extends Phaser.Scene {
     this.stars = createStarfield(this);
 
     this._createShip();
+    this._createReturnToMenuButton();
     this._bindKeyboard();
 
     this._escKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.ESC);
@@ -1135,6 +1351,7 @@ class LearningScene extends Phaser.Scene {
       this.stars.b.setSize(w, h);
       this.stars.c.setSize(w, h);
       this._positionShip();
+      if (this.menuBtn) this.menuBtn.setPosition(w - 14, 16);
     });
   }
 
@@ -1409,6 +1626,25 @@ class LearningScene extends Phaser.Scene {
     keys.n4.on("down", onDown(3));
   }
 
+  _createReturnToMenuButton() {
+    const { width } = this.scale;
+    this.menuBtn = this.add
+      .text(width - 14, 16, "RETURN TO MAIN MENU", {
+        fontFamily: '"Press Start 2P", monospace',
+        fontSize: "8px",
+        color: "rgba(233,247,255,0.9)",
+      })
+      .setOrigin(1, 0)
+      .setDepth(20)
+      .setShadow(0, 0, "rgba(56,246,255,0.25)", 8, true, true)
+      .setInteractive({ useHandCursor: true });
+
+    this.menuBtn.on("pointerdown", () => {
+      if (this._learningFrozen) return;
+      this.scene.start("MainMenuScene");
+    });
+  }
+
   _spawnNextAlien() {
     const ui = this.game.__ui;
     const { width } = this.scale;
@@ -1635,7 +1871,7 @@ function boot() {
       default: "arcade",
       arcade: { gravity: { y: 0 } },
     },
-    scene: [BootScene, MainMenuScene, NameInputScene, GameScene, LearningScene, GameOverScene],
+    scene: [BootScene, MainMenuScene, LevelSelectScene, NameInputScene, GameScene, LearningScene, GameOverScene],
   };
 
   const game = new Phaser.Game(config);
@@ -1644,6 +1880,7 @@ function boot() {
   game.__ui = ui;
   game.__playerInitials = "AAA";
   game.__selectedMode = "campaign";
+  game.__selectedCampaignCategory = null;
 
   // Bulletproof linkage: HUD buttons / 1–4 keys route to the active gameplay scene.
   ui.onChoice = (choiceIndex) => {
